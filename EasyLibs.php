@@ -3,7 +3,7 @@
 //                >>>  EasyLibs.php  <<<
 //
 //
-//      [Version]     v1.8  (2015-10-30)  Beta
+//      [Version]     v1.9  (2015-11-13)  Beta
 //
 //      [Based on]    PHP v5.3+
 //
@@ -31,7 +31,7 @@ class FS_File extends SplFileObject {
         $this->URI = $this->getRealPath();
     }
     public function readAll() {
-        return  $this->fread( $this->getSize() );
+        return  file_get_contents( $this->URI );
     }
     public function write($_Data) {
         return $this->fwrite($_Data);
@@ -147,7 +147,7 @@ class FS_Directory extends SplFileInfo {
 }
 // ------------------------------
 //
-//    SQLite OOP Wrapper  v0.5
+//    SQLite OOP Wrapper  v0.6
 //
 // ------------------------------
 
@@ -160,6 +160,20 @@ class SQL_Table {
         $this->name = $_Name;
     }
 
+    public function rename($_Name) {
+        return  $this->ownerBase->exec(
+            "alter table {$this->name} rename to {$_Name}"
+        );
+    }
+    public function addColumn($_Name,  $_Define = null) {
+        if (is_string( $_Name ))
+            $_Name = array("$_Name" => $_Define);
+
+        foreach ($_Name  as  $_Key => $_Value)
+            $this->ownerBase->exec(
+                "alter table {$this->name} add column {$_Key} {$_Value}"
+            );
+    }
     public function insert($_Record) {
         $_Field_Name = array();  $_Field_Value = array();
 
@@ -439,11 +453,13 @@ class HTTPServer {
     private static $IPA_Header = array('Client-Ip', 'X-Forwarded-For', 'Remote-Addr');
 
     private static function getRequestIPA($_Header) {
-        foreach (self::$IPA_Header as $_Key)
-            if (! empty( $_Header[$_Key] ))
-                return $_Header[$_Key];
-    }
+        foreach (self::$IPA_Header as $_Key) {
+            if (empty( $_Header[$_Key] ))  continue;
 
+            $_IPA = explode(',', $_Header[$_Key]);
+            return  trim( $_IPA[0] );
+        }
+    }
     private static function getRequestArgs($_Method) {
         if ($_Method == 'GET')  return $_GET;
         if ($_Method == 'POST')  return $_POST;
@@ -480,12 +496,14 @@ class HTTPServer {
 
         if (! isset( $_Head['X-Powered-By'] ))
             $_Head['X-Powered-By'] = '';
-        if (stripos($_Head['X-Powered-By'], 'EasyLibs')  ===  false) {
-            $_Head['X-Powered-By'] .= '; EasyLibs.php/1.6';
-            $_Head['X-Powered-By'] = trim(
-                preg_replace('/;\s*;/', ';', $_Head['X-Powered-By']),  ';'
-            );
+
+        $_XPB = $_Head['X-Powered-By'];
+
+        if (stripos($_XPB, 'EasyLibs')  ===  false) {
+            $_XPB .= '; EasyLibs.php/1.6';
+            $_Head['X-Powered-By'] = trim(preg_replace('/;\s*;/', ';', $_XPB),  ';');
         }
+
         if (isset( $_Head['WWW-Authenticate'] ))
             $this->setStatus(401);
         else {
@@ -506,19 +524,25 @@ class HTTPServer {
         if (isset( $_Header['Cookie'] ))
             $this->requestCookie = new HTTP_Cookie( $_Header['Cookie'] );
 
-        if (! $_xDomain)  return;
+        if ((! $_xDomain)  ||  ($_Header['Request-Method'] != 'OPTIONS'))
+            return;
 
-        if ($_Header['Request-Method'] != 'OPTION')  return;
+        $_AC = 'Access-Control';
+        $_ACA = "{$_AC}-Allow";    $_ACR = "{$_AC}-Request";
 
         $this->setHeader(array(
-            'Access-Control-Allow-Origin'   =>
+            'Response-Code'          =>  204,
+            "{$_ACA}-Origin"         =>
                 isset( $_Header['Origin'] )  ?  $_Header['Origin']  :  '*',
-            'Access-Control-Allow-Methods'  =>
-                isset( $_Header['Access-Control-Request-Methods'] )  ?
-                    $_Header['Access-Control-Request-Methods']  :  'GET,POST',
-            'Access-Control-Allow-Headers'  =>
-                isset( $_Header['Access-Control-Request-Headers'] )  ?
-                    $_Header['Access-Control-Request-Headers']  :  'X-Requested-With'
+            "{$_ACA}-Methods"        =>
+                isset( $_Header["{$_ACR}-Methods"] )  ?
+                    $_Header["{$_ACR}-Methods"]  :  'GET, POST, PUT, DELETE',
+            "{$_ACA}-Headers"        =>
+                isset( $_Header["{$_ACR}-Headers"] )  ?
+                    $_Header["{$_ACR}-Headers"]  :  'X-Requested-With',
+            "{$_ACA}-Credentials"    =>  true,
+            "{$_AC}-Expose-Headers"  =>  'X-Powered-By',
+            "{$_AC}-Max-Age"         =>  300
         ));
         exit;
     }
