@@ -3,7 +3,7 @@
 //                >>>  EasyLibs.php  <<<
 //
 //
-//      [Version]     v1.9  (2015-11-13)  Beta
+//      [Version]     v1.9  (2015-11-15)  Stable
 //
 //      [Based on]    PHP v5.3+
 //
@@ -476,7 +476,7 @@ class HTTPServer {
         return $_Args;
     }
 
-    public $requestHeaders;
+    public $requestHeader;
     public $requestIPAddress;
     public $requestCookie;
 
@@ -519,8 +519,8 @@ class HTTPServer {
     }
 
     public function __construct($_xDomain = false) {
-        $_Header = $this->requestHeaders = self::getRequestHeaders();
-        $this->requestIPAddress = self::getRequestIPA( $this->requestHeaders );
+        $_Header = $this->requestHeader = self::getRequestHeaders();
+        $this->requestIPAddress = self::getRequestIPA( $this->requestHeader );
         if (isset( $_Header['Cookie'] ))
             $this->requestCookie = new HTTP_Cookie( $_Header['Cookie'] );
 
@@ -608,6 +608,10 @@ class HTTPServer {
             );
             if (is_array( $_Return ))
                 $this->send($_Return['data'], $_Return['header']);
+            else
+                $this->send(
+                     is_string($_Return) ? $_Return : json_encode($_Return)
+                );
         }
         return $this;
     }

@@ -21,10 +21,39 @@
 
 ## 应用实例
 
- 1. [Web 前端跨域代理](http://git.oschina.net/Tech_Query/EasyLibs.php/blob/master/demo/XDomainProxy.php) —— http://git.oschina.net/Tech_Query/EasyWebApp/blob/master/demo/php/proxy.php
+### （一）Web 前端跨域代理
 
+ - 核心代码 —— http://git.oschina.net/Tech_Query/EasyLibs.php/blob/master/demo/XDomainProxy.php
+ - 演示项目 —— http://git.oschina.net/Tech_Query/EasyWebApp/blob/master/demo/php/proxy.php
+ - 简单示例
+
+```PHP
+$_XDomain_Proxy = new XDomainProxy();
+
+//  缓存清理
+if (isset( $_GET['cache_clear'] )) {
+    $_XDomain_Proxy->cache->clear();
+    exit;
+}
+if (empty( $_GET['url'] ))  exit;
+
+//  跨域代理
+$_Time_Out = isset( $_GET['second_out'] )  ?  $_GET['second_out']  :  0;
+
+$_XDomain_Proxy->open($_GET['url'],  is_numeric($_Time_Out) ? $_Time_Out : 0);
+
+$_XDomain_Proxy->onError(function () {
+    return array(
+        'data'  =>  array(
+            'code'     =>  504,
+            'message'  =>  '网络拥塞，请尝试刷新本页~'
+        )
+    );
+})->send();
+```
 
 ## 版本历史
 
- - v1.8 Beta —— 2015年10月30日 **文件系统类**改继承自 SplFileInfo；HTTP 服务器 实现了 **REST 路由**
- - v1.6 Beta —— 2015年10月29日 首个开源版本，基本模式、架构已成形
+ - v1.9 Stable —— 2015年11月15日  SQL_Table 增加 rename、addColumn 实例方法；HTTPServer 多处优化
+ - v1.8 Beta   —— 2015年10月30日  **文件系统类**改继承自 SplFileInfo；HTTP 服务器 实现了 **REST 路由**
+ - v1.6 Beta   —— 2015年10月29日  首个开源版本，基本模式、架构已成形

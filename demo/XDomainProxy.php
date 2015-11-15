@@ -109,6 +109,8 @@ class XDomainProxy {
     public function open($_URL,  $_Cache_Second = 0) {
         $this->URL = $_URL;
         $this->cacheSecond = $_Cache_Second;
+
+        return $this;
     }
 
     public function onLoad($_Method, $_URL, $_Callback) {
@@ -132,8 +134,11 @@ class XDomainProxy {
             $_Return = call_user_func(
                 $_Callback,
                 $_Response->dataJSON ? $_Response->dataJSON : $_Response->data,
-                $_Response->headers
+                $_Response->headers,
+                $this
             );
+            if (empty( $_Return ))  return;
+
             if (isset( $_Return['header'] ))
                 $_Response->headers = $_Return['header'];
             if (isset( $_Return['data'] ))
@@ -151,7 +156,7 @@ class XDomainProxy {
         return $_Response;
     }
     private function request() {
-        $_Header = array_diff_key($this->server->requestHeaders, array(
+        $_Header = array_diff_key($this->server->requestHeader, array(
             'Host'              =>  '',
             'Referer'           =>  '',
             'X-Requested-With'  =>  ''
@@ -179,37 +184,73 @@ class XDomainProxy {
         if ($this->cacheSecond > 0)
             $_Response = $this->cache->get( $this->URL );
 
-        if (empty( $_Response )) 
+        if (empty( $_Response ))
             $_Response = $this->request();
 
-        $this->server->send($_Response);
+        if (isset( $_Response ))
+            $this->server->send($_Response);
     }
 }
-// ----------------------------------------
+
+// ------------------------------
 //
-//    App Main Logic
+//    IP Address Data Base
 //
-// ----------------------------------------
+// ------------------------------
 
-$_XDomain_Proxy = new XDomainProxy();
+class IPA_DB {
+    private static function initCacheTable($_SQL_DB) {
+        $_SQL_DB->createTable('IPA', array(
+            'AID'  =>  'Integer Primary Key',
+            'IPA'  =>  'Text not Null',
+            'Geo'  =>  'Text'
+        ));
+        return $_SQL_DB;
+    }
 
+    private $httpClient;
+    private $dataBase;
 
-if (isset( $_GET['cache_clear'] )) {
-    $_XDomain_Proxy->cache->clear();
-    exit;
+    public function __construct() {
+        $this->httpClient = new HTTPClient();
+        $this->dataBase = self::initCacheTable(new SQLite('cache/http_cache'));
+    }
+    public function clear() {
+        $this->dataBase->dropTable('IPA');
+        self::initCacheTable( $this->dataBase );
+    }
+
+    public function getGeoInfo($_IPA) {
+        $_Cache = $this->dataBase->query(array(
+            'select'  =>  'Geo',
+            'from'    =>  'IPA',
+            'where'   =>  "IPA = '{$_IPA}'"
+        ));
+        if ( count($_Cache) )  return $_Cache[0]['Geo'];
+
+        $_Geo = $this->httpClient->get("http://ip.taobao.com/service/getIpInfo.php?ip={$_IPA}");
+
+        if ($_Geo === false)
+            return json_encode(array(
+                'code'     =>  504,
+                'message'  =>  '网络拥塞，请尝试刷新本页~'
+            ));
+
+        $_Data = $_Geo->dataJSON;
+
+        if (is_array( $_Data['data'] ))
+            $_Data['code'] = 200;
+        else
+            $_Data = array(
+                'code'     =>  416,
+                'message'  =>  "您当前的 IP 地址（{$_IPA}）不能确定 您的当前城市……"
+            );
+        $_Geo->dataJSON = $_Data;
+
+        $this->dataBase->IPA->insert(array(
+            'IPA'  =>  $_IPA,
+            'Geo'  =>  $_Geo->data
+        ));
+        return $_Geo;
+    }
 }
-if (empty( $_GET['url'] ))  exit;
-
-
-$_Time_Out = isset( $_GET['second_out'] )  ?  $_GET['second_out']  :  0;
-
-$_XDomain_Proxy->open($_GET['url'],  is_numeric($_Time_Out) ? $_Time_Out : 0);
-
-$_XDomain_Proxy->onError(function () {
-    return array(
-        'data'  =>  array(
-            'code'     =>  504,
-            'message'  =>  '网络拥塞，请尝试刷新本页~'
-        )
-    );
-})->send();
