@@ -24,7 +24,9 @@
 ### （一）Web 前端跨域代理
 
  - 核心代码 —— http://git.oschina.net/Tech_Query/EasyLibs.php/blob/master/demo/XDomainProxy.php
- - 演示项目 —— http://git.oschina.net/Tech_Query/EasyWebApp/blob/master/demo/php/proxy.php
+ - 演示项目
+   - http://git.oschina.net/Tech_Query/EasyWebApp/blob/master/demo/php/proxy.php
+   - http://git.oschina.net/Tech_Query/WikiWand_China/blob/master/index.php
  - 简单示例
 
 ```PHP

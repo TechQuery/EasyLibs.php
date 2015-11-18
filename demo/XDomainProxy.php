@@ -87,11 +87,18 @@ class Proxy_Cache {
 }
 
 class XDomainProxy {
-    public  $server;
-    public  $cache;
-    private $client;
+    private static function isCacheable($_URL) {
+        $_Path = rtrim(
+            parse_url($_URL, PHP_URL_PATH),  '/'
+        );
+        if (! empty($_Path))
+            return true;
+    }
+    public $server;
+    public $cache;
+    public $client;
 
-    private $URL;
+    public  $URL;
     private $cacheSecond;
     private $callback = array(
         'GET'     =>  array(),
@@ -149,7 +156,8 @@ class XDomainProxy {
         }
         if (
             ($this->cacheSecond > 0)  &&
-            (($_Method == 'GET')  ||  ($_Method == 'DELETE'))
+            (($_Method == 'GET')  ||  ($_Method == 'DELETE'))  &&
+            self::isCacheable( $this->URL )
         )
             $this->cache->add($this->URL, $_Response, $this->cacheSecond);
 
@@ -181,7 +189,10 @@ class XDomainProxy {
         return  $this->callBack($_Method, $_Response);
     }
     public function send() {
-        if ($this->cacheSecond > 0)
+        if (
+            ($this->cacheSecond > 0)  &&
+            self::isCacheable( $this->URL )
+        )
             $_Response = $this->cache->get( $this->URL );
 
         if (empty( $_Response ))
