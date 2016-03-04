@@ -3,7 +3,7 @@
 //                >>>  EasyLibs.php  <<<
 //
 //
-//      [Version]    v2.2  (2016-03-03)  Stable
+//      [Version]    v2.2  (2016-03-04)  Stable
 //
 //      [Require]    PHP v5.3+
 //
@@ -247,10 +247,19 @@ class SQLite {
             echo '[Error - '.basename($_Base_Name).']  '.$_Error->getMessage();
         }
     }
-    public function query($_SQL_Array) {
+    public function query(
+        $_SQL_Array,  $_Fetch_Type = PDO::FETCH_BOTH,  $_Fetch_Args = null
+    ) {
         $_Query = $this->dataBase->query( self::queryString( $_SQL_Array ) );
 
-        return  $_Query ? $_Query->fetchAll() : array();
+        if (! $_Query)
+            $_Query = array();
+        elseif (! $_Fetch_Args)
+            $_Query = $_Query->fetchAll($_Fetch_Type);
+        else
+            $_Query = $_Query->fetchAll($_Fetch_Type, $_Fetch_Args);
+
+        return $_Query;
     }
     public function existTable($_Name) {
         $_Statement = self::$allTable;
@@ -696,7 +705,7 @@ abstract class HTMLConverter {
     );
     public $rule;
 
-    private function innerLink($_URL) {
+    public function innerLink($_URL) {
         $_Host = parse_url($_URL, PHP_URL_HOST);
 
         if (empty( $_Host ))
@@ -707,13 +716,17 @@ abstract class HTMLConverter {
             return $_URL;
     }
 
-    public function __construct($_URL, $_Selector, $_Rule) {
-        $this->URL = $_URL;
-        $this->domain = self::getURLDomain($_URL);
+    public function __construct($_URL,  $_Selector = null,  $_Rule) {
+        if (substr(trim($_URL), 0, 1) != '<') {
+            $this->URL = $_URL;
+            $this->domain = self::getURLDomain($_URL);
 
-        $this->DOM = phpQuery::newDocumentFile($_URL);
-
-        $this->root = $this->DOM['body'];
+            $this->DOM = phpQuery::newDocumentFile($_URL);
+            $this->root = $this->DOM['body'];
+        } else {
+            $this->DOM = phpQuery::newDocumentHTML($_URL);
+            $this->root = $this->DOM;
+        }
 
         if (is_string( $_Selector )) {
             $_DOM = $this->root[ $_Selector ];
@@ -769,10 +782,10 @@ class HTML_MarkDown extends HTMLConverter {
         return  (count($_Title) > 3)  ?  $_Title  :  '';
     }
 
-    public function __construct($_URL,  $_Selector = null) {
+    public function __construct($_URL,  $_Selector,  $_Rule = array()) {
         $_This = $this;
 
-        parent::__construct($_URL, $_Selector, array(
+        parent::__construct($_URL, $_Selector, array_merge(array(
             'h1, h2, h3, h4, h5, h6'  =>  function ($_HTML, $_DOM) {
                 return  "\n\n" . str_repeat('#', $_DOM->get(0)->tagName[1]) .
                     " {$_HTML}";
@@ -831,6 +844,6 @@ class HTML_MarkDown extends HTMLConverter {
 
                 return $_Code;
             }
-        ));
+        ), $_Rule));
     }
 }

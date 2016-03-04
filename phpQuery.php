@@ -3743,8 +3743,7 @@ class phpQueryObject
 					? $node->getAttribute($attr)
 					: null;
 		}
-		return is_null($value)
-			? '' : $this;
+		return  is_null($value) ? '' : $this;
 	}
 	/**
 	 * @access private
