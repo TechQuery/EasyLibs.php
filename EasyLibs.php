@@ -3,7 +3,7 @@
 //                >>>  EasyLibs.php  <<<
 //
 //
-//      [Version]    v2.2  (2016-03-15)  Stable
+//      [Version]    v2.3  (2016-03-23)  Stable
 //
 //      [Require]    PHP v5.3+
 //
@@ -25,6 +25,10 @@ class FS_File extends SplFileObject {
     public $URI;
 
     public function __construct($_File_Name,  $_Mode = 'a+') {
+        if (! file_exists($_File_Name)) {
+            @ mkdir( pathinfo($_File_Name, PATHINFO_DIRNAME) );
+            file_put_contents($_File_Name, '');
+        }
         parent::__construct($_File_Name, $_Mode);
 
         $this->accessMode = $_Mode;
@@ -276,6 +280,11 @@ class SQLite {
         return  $this->table[$_Name] = new SQL_Table($this->dataBase, $_Name);
     }
     public function __get($_Name) {
+        if ($_Name == 'error')
+            return array(
+                'code'  =>  $this->dataBase->errorCode(),
+                'info'  =>  $this->dataBase->errorInfo(),
+            );
         if (isset( $this->table[$_Name] ))
             return $this->table[$_Name];
         elseif ($this->existTable( $_Name ))
@@ -305,9 +314,112 @@ class SQLite {
 }
 // ----------------------------------------
 //
-//    Simple HTTP Server & Client  v0.9
+//    Simple HTTP Server & Client  v1.0
 //
 // ----------------------------------------
+
+class HTTP_Cookie {
+    private $cookie = array();
+
+    public function __construct($_Cookie) {
+        if (is_array( $_Cookie ))
+            return  $this->cookie = $_Cookie;
+
+        if (function_exists('http_parse_cookie'))
+            return  $this->cookie = http_parse_cookie($_Cookie);
+
+        $_Cookie = explode(';', $_Cookie, 2);
+
+        foreach ($_Cookie as $_Item) {
+            $_Item = explode('=', $_Item, 2);
+            $this->cookie[trim( $_Item[0] )] = trim( $_Item[1] );
+        }
+    }
+    public function __toString() {
+        if (function_exists('http_build_cookie'))
+            return  http_build_cookie($this->cookie);
+
+        $_Cookie = array();
+
+        foreach ($this->cookie  as  $_Key => $_Value)
+            $_Cookie[] = "{$_Key}={$_Value}";
+
+        return  join('; ', $_Cookie);
+    }
+
+    public function get($_Name) {
+        if (isset( $this->cookie[$_Name] ))  return $this->cookie[$_Name];
+    }
+    public function set($_Name, $_Value) {
+        $this->cookie[$_Name] = $_Value;
+    }
+}
+
+class HTTP_Request {
+    private static $More_Header = array(
+        'REMOTE_ADDR', 'REQUEST_METHOD', 'CONTENT_TYPE', 'CONTENT_LENGTH'
+    );
+    private static function getHeaders() {
+        $_Header = array();  $_Take = false;
+
+        foreach ($_SERVER  as  $_Key => $_Value) {
+            if (substr($_Key, 0, 5) == 'HTTP_') {
+                $_Key = substr($_Key, 5);
+                $_Take = true;
+            }
+            if ($_Take  ||  in_array($_Key, self::$More_Header)) {
+                $_Header[str_replace(' ', '-', ucwords(
+                    strtolower( str_replace('_', ' ', $_Key) )
+                ))] = $_Value;
+                $_Take = false;
+            }
+        }
+        return $_Header;
+    }
+
+    private static $IPA_Header = array(
+        'Client-Ip',  'X-Forwarded-For',  'Remote-Addr'
+    );
+    private static function getIPA($_Header) {
+        foreach (self::$IPA_Header as $_Key) {
+            if (empty( $_Header[$_Key] ))  continue;
+
+            $_IPA = explode(',', $_Header[$_Key]);
+            return  trim( $_IPA[0] );
+        }
+    }
+    private static function getData($_Method) {
+        if ($_Method == 'GET')  return $_GET;
+        if ($_Method == 'POST')  return $_POST;
+
+        parse_str(file_get_contents('php://input'), $_Args);
+
+        if ($_Method == 'DELETE') {
+            global $_DELETE;
+            $_DELETE = $_Args;
+        } elseif ($_Method == 'PUT') {
+            global $_PUT;
+            $_PUT = $_Args;
+        }
+        return $_Args;
+    }
+
+    public $Header;
+    public $IPAddress;
+    public $Cookie;
+    public $data;
+
+    public function __construct() {
+        $_Header = $this->Header = self::getHeaders();
+
+        $this->IPAddress = self::getIPA( $this->Header );
+
+        if (isset( $_Header['Cookie'] ))
+            $this->Cookie = new HTTP_Cookie( $_Header['Cookie'] );
+
+        $this->data = self::getData( $this->Header['Request-Method'] );
+    }
+}
 
 class HTTP_Response {
     public static $statusCode = array(
@@ -407,96 +519,12 @@ class HTTP_Response {
         }
     }
 }
-class HTTP_Cookie {
-    private $cookie = array();
-
-    public function __construct($_Cookie) {
-        if (is_array( $_Cookie ))
-            return  $this->cookie = $_Cookie;
-
-        if (function_exists('http_parse_cookie'))
-            return  $this->cookie = http_parse_cookie($_Cookie);
-
-        $_Cookie = explode(';', $_Cookie, 2);
-
-        foreach ($_Cookie as $_Item) {
-            $_Item = explode('=', $_Item, 2);
-            $this->cookie[trim( $_Item[0] )] = trim( $_Item[1] );
-        }
-    }
-    public function __toString() {
-        if (function_exists('http_build_cookie'))
-            return  http_build_cookie($this->cookie);
-
-        $_Cookie = array();
-
-        foreach ($this->cookie  as  $_Key => $_Value)
-            $_Cookie[] = "{$_Key}={$_Value}";
-
-        return  join('; ', $_Cookie);
-    }
-
-    public function get($_Name) {
-        if (isset( $this->cookie[$_Name] ))  return $this->cookie[$_Name];
-    }
-    public function set($_Name, $_Value) {
-        $this->cookie[$_Name] = $_Value;
-    }
-}
 
 class HTTPServer {
-    private static $Request_Header = array(
-        'REMOTE_ADDR', 'REQUEST_METHOD', 'CONTENT_TYPE', 'CONTENT_LENGTH'
-    );
-    private static function getRequestHeaders() {
-        $_Header = array();  $_Take = false;
+    public $request;
+    private $onStart;
 
-        foreach ($_SERVER  as  $_Key => $_Value) {
-            if (substr($_Key, 0, 5) == 'HTTP_') {
-                $_Key = substr($_Key, 5);
-                $_Take = true;
-            }
-            if ($_Take  ||  in_array($_Key, self::$Request_Header)) {
-                $_Header[str_replace(' ', '-', ucwords(
-                    strtolower( str_replace('_', ' ', $_Key) )
-                ))] = $_Value;
-                $_Take = false;
-            }
-        }
-        return $_Header;
-    }
-
-    private static $IPA_Header = array('Client-Ip', 'X-Forwarded-For', 'Remote-Addr');
-
-    private static function getRequestIPA($_Header) {
-        foreach (self::$IPA_Header as $_Key) {
-            if (empty( $_Header[$_Key] ))  continue;
-
-            $_IPA = explode(',', $_Header[$_Key]);
-            return  trim( $_IPA[0] );
-        }
-    }
-    private static function getRequestArgs($_Method) {
-        if ($_Method == 'GET')  return $_GET;
-        if ($_Method == 'POST')  return $_POST;
-
-        parse_str(file_get_contents('php://input'), $_Args);
-
-        if ($_Method == 'DELETE') {
-            global $_DELETE;
-            $_DELETE = $_Args;
-        } elseif ($_Method == 'PUT') {
-            global $_PUT;
-            $_PUT = $_Args;
-        }
-        return $_Args;
-    }
-
-    public $requestHeader;
-    public $requestIPAddress;
-    public $requestCookie;
-
-    private function setStatus($_Code) {
+    public function setStatus($_Code) {
         $_Message = isset( HTTP_Response::$statusCode[$_Code] )  ?
             HTTP_Response::$statusCode[$_Code]  :  '';
 
@@ -534,11 +562,11 @@ class HTTPServer {
         return $this;
     }
 
-    public function __construct($_xDomain = false) {
-        $_Header = $this->requestHeader = self::getRequestHeaders();
-        $this->requestIPAddress = self::getRequestIPA( $this->requestHeader );
-        if (isset( $_Header['Cookie'] ))
-            $this->requestCookie = new HTTP_Cookie( $_Header['Cookie'] );
+    public function __construct($_xDomain = false,  $_onStart = null) {
+        $this->request = new HTTP_Request();
+        $this->onStart = $_onStart;
+
+        $_Header = $this->request->Header;
 
         if ((! $_xDomain)  ||  ($_Header['Request-Method'] != 'OPTIONS'))
             return;
@@ -613,15 +641,22 @@ class HTTPServer {
     }
 
     public function on($_Method, $_Path, $_Callback) {
-        $_rMethod = $this->requestHeader['Request-Method'];
+        $_rMethod = $this->request->Header['Request-Method'];
         $_rPath = $_SERVER['PATH_INFO'];
         if (
             ($_rMethod == strtoupper($_Method))  &&
             (stripos($_rPath, $_Path)  !==  false)
         ) {
-            $_Return = call_user_func(
-                $_Callback,  $_rPath,  self::getRequestArgs($_rMethod)
-            );
+            $_rPath = explode('/', $_rPath);
+            array_shift( $_rPath );
+
+            $_Return = call_user_func_array($_Callback, array(
+                $_rPath,
+                $this->request,
+                isset( $this->onStart )  ?
+                    call_user_func($this->onStart, $_rPath, $this->request)  :
+                    null
+            ));
             if (is_array( $_Return ))
                 $this->send($_Return['data'], $_Return['header']);
             else
@@ -808,7 +843,7 @@ class HTML_MarkDown extends HTMLConverter {
         return  (count($_Title) > 3)  ?  $_Title  :  '';
     }
 
-    public function __construct($_URL,  $_Selector,  $_Rule = array()) {
+    public function __construct($_URL,  $_Selector = null,  $_Rule = array()) {
         $_This = $this;
 
         parent::__construct($_URL, $_Selector, array_merge(array(
@@ -839,8 +874,13 @@ class HTML_MarkDown extends HTMLConverter {
                 return  '![' . $_DOM->attr('alt') . '](' . $_DOM->attr('src') .
                     $_This->getTitleAttr($_DOM) . ')';
             },
-            'hr'                      =>  function () {
-                return  "\n\n---\n\n";
+            'hr'                      =>  function ($_HTML, $_DOM) {
+                return  "\n\n" . (
+                    preg_match(
+                        '/page-break-after:\s*always/i', $_DOM->attr('style')
+                    ) ?
+                        '[========]' : '---'
+                ) . "\n\n";
             },
             'p'                       =>  function ($_HTML) {
                 return  "\n\n{$_HTML}\n\n";
