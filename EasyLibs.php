@@ -3,7 +3,7 @@
 //                >>>  EasyLibs.php  <<<
 //
 //
-//      [Version]    v2.3  (2016-03-29)  Stable
+//      [Version]    v2.3  (2016-04-08)  Stable
 //
 //      [Require]    PHP v5.3+
 //
@@ -219,15 +219,22 @@ class SQL_Table {
         );
     }
 }
+
 class SQLite {
+
+    /* ----- SQL Statement Generation ----- */
+
     private static $statement = array(
-        'select'  =>  array('select', 'from', 'where', 'order by', 'limit', 'offset')
+        'select'  =>  array(
+            'select',  'from',  'where',  'order by',  'limit',  'offset'
+        )
     );
     private static $allTable = array(
         'select'  =>  'name, sql',
         'from'    =>  'SQLite_Master',
         'where'   =>  "type = 'table'"
     );
+
     private static function queryString($_SQL_Array) {
         $_SQL = array();
 
@@ -241,6 +248,8 @@ class SQLite {
         return  join(' ', $_SQL);
     }
 
+    /* ----- Data Base Operation ----- */
+
     private $dataBase;
     private $table = array();
 
@@ -253,6 +262,7 @@ class SQLite {
             echo '[Error - '.basename($_Base_Name).']  '.$_Error->getMessage();
         }
     }
+
     public function query(
         $_SQL_Array,  $_Fetch_Type = PDO::FETCH_OBJ,  $_Fetch_Args = null
     ) {
@@ -272,15 +282,20 @@ class SQLite {
 
         return $_Query;
     }
-    public function existTable($_Name) {
+
+    /* ----- Data Table Operation ----- */
+
+    public function hasTable($_Name) {
         $_Statement = self::$allTable;
         $_Statement['where'] .= " and name = '{$_Name}'";
 
         return  !! count( $this->query($_Statement) );
     }
+
     private function addTable($_Name) {
         return  $this->table[$_Name] = new SQL_Table($this->dataBase, $_Name);
     }
+
     public function __get($_Name) {
         if ($_Name == 'error')
             return array(
@@ -289,31 +304,35 @@ class SQLite {
             );
         if (isset( $this->table[$_Name] ))
             return $this->table[$_Name];
-        elseif ($this->existTable( $_Name ))
+
+        if ($this->hasTable( $_Name ))
             return $this->addTable($_Name);
     }
 
     public function createTable($_Name, $_Column_Define) {
-        if ($this->existTable( $_Name ))  return;
-
         $_Define_Array = array();
 
         foreach ($_Column_Define  as  $_Key => $_Define)
             $_Define_Array[] = "{$_Key} {$_Define}";
 
         $_Result = $this->dataBase->exec(
-            "create Table {$_Name} (\n    ".join(",\n    ", $_Define_Array)."\n)"
+            "create Table if not exist {$_Name} (\n    "  .
+            join(",\n    ", $_Define_Array)  .
+            "\n)"
         );
         return  is_numeric($_Result) ? (!! $this->addTable($_Name)) : false;
     }
+
     public function dropTable($_Name) {
-        $_Result = $this->dataBase->exec("drop Table {$_Name}");
-        if (is_numeric( $_Result )) {
+        if (is_numeric(
+            $this->dataBase->exec("drop Table if exist {$_Name}")
+        )) {
             unset( $this->table[$_Name] );
             return true;
         }
     }
 }
+
 // ----------------------------------------
 //
 //    Simple HTTP Server & Client  v1.0
@@ -715,8 +734,8 @@ class HTTPClient {
     public function post($_URL,  $_Data,  $_Header = array()) {
         return  $this->request('POST', $_URL, $_Data, $_Header);
     }
-    public function delete($_URL,  $_Header = array()) {
-        return  $this->request('DELETE', $_URL, $_Header);
+    public function delete($_URL,  $_Data,  $_Header = array()) {
+        return  $this->request('DELETE', $_URL, $_Data, $_Header);
     }
     public function put($_URL,  $_Data,  $_Header = array()) {
         return  $this->request('PUT', $_URL, $_Data, $_Header);
