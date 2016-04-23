@@ -6,7 +6,7 @@
 ## 【主要模块（类）】
 
  1. 文件系统  v0.4
- 2. SQLite  v0.5
+ 2. SQL 数据库类族 v0.7
  3. HTTP 服务器
    - 通用响应 —— setStatus、setHeader、setCookie、send
    - 专用响应 —— redirect、auth、download
@@ -59,6 +59,7 @@ $_XDomain_Proxy->onError(function () {
 
 ## 【版本简史】
 
+ - v2.3 Stable —— 2016年4月21日   独立出 **HTTP_Request 实现类**、 **SQLDB 抽象类**，并新增 **MySQL 实现类**
  - v2.2 Stable —— 2016年3月3日    新增 **HTMLConverter 抽象类**（HTML 转换器），且自带一个 MarkDown 规则实现类
  - v1.9 Stable —— 2015年11月15日  SQL_Table 增加 rename、addColumn 实例方法；HTTPServer 多处优化
  - v1.8 Beta   —— 2015年10月30日  **文件系统类**改继承自 SplFileInfo；HTTP 服务器 实现了 **REST 路由**

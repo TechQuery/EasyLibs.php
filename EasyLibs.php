@@ -3,7 +3,7 @@
 //                >>>  EasyLibs.php  <<<
 //
 //
-//      [Version]    v2.3  (2016-04-08)  Stable
+//      [Version]    v2.3  (2016-04-21)  Stable
 //
 //      [Require]    PHP v5.3+
 //
@@ -153,11 +153,11 @@ class FS_Directory extends SplFileInfo {
     }
 }
 
-// ------------------------------
+// --------------------------------------
 //
-//    SQLite OOP Wrapper  v0.6
+//    SQL DataBase OOP Wrapper  v0.7
 //
-// ------------------------------
+// --------------------------------------
 
 class SQL_Table {
     private $ownerBase;
@@ -220,22 +220,17 @@ class SQL_Table {
     }
 }
 
-class SQLite {
+abstract class SQLDB {
 
     /* ----- SQL Statement Generation ----- */
 
-    private static $statement = array(
+    protected static $statement = array(
         'select'  =>  array(
             'select',  'from',  'where',  'order by',  'limit',  'offset'
         )
     );
-    private static $allTable = array(
-        'select'  =>  'name, sql',
-        'from'    =>  'SQLite_Master',
-        'where'   =>  "type = 'table'"
-    );
 
-    private static function queryString($_SQL_Array) {
+    protected static function queryString($_SQL_Array) {
         $_SQL = array();
 
         foreach (self::$statement  as  $_Name => $_Key)
@@ -250,18 +245,9 @@ class SQLite {
 
     /* ----- Data Base Operation ----- */
 
-    private $dataBase;
-    private $table = array();
-
-    public function __construct($_Base_Name) {
-        if (! ($_Base_Name instanceof FS_Directory))
-            new FS_Directory( pathinfo($_Base_Name, PATHINFO_DIRNAME) );
-        try {
-            $this->dataBase = new PDO("sqlite:{$_Base_Name}.db");
-        } catch (PDOException $_Error) {
-            echo '[Error - '.basename($_Base_Name).']  '.$_Error->getMessage();
-        }
-    }
+    protected $dataBase;
+    protected $table = array();
+    public    $name;
 
     public function query(
         $_SQL_Array,  $_Fetch_Type = PDO::FETCH_OBJ,  $_Fetch_Args = null
@@ -285,14 +271,9 @@ class SQLite {
 
     /* ----- Data Table Operation ----- */
 
-    public function hasTable($_Name) {
-        $_Statement = self::$allTable;
-        $_Statement['where'] .= " and name = '{$_Name}'";
+    abstract public function hasTable($_Name);
 
-        return  !! count( $this->query($_Statement) );
-    }
-
-    private function addTable($_Name) {
+    protected function addTable($_Name) {
         return  $this->table[$_Name] = new SQL_Table($this->dataBase, $_Name);
     }
 
@@ -333,9 +314,58 @@ class SQLite {
     }
 }
 
+class SQLite extends SQLDB {
+    public function __construct($_Name) {
+        $this->name = $_Name;
+
+        new FS_Directory( pathinfo($_Name, PATHINFO_DIRNAME) );
+
+        if (PHP_OS != 'WINNT')  $_Name = __DIR__ . '/' . $_Name;
+
+        $this->dataBase = new PDO("sqlite:{$_Name}.db");
+    }
+
+    public function hasTable($_Name) {
+        return  !! count( $this->query(array(
+            'select'  =>  'name, sql',
+            'from'    =>  'SQLite_Master',
+            'where'   =>  "type = 'table' and name = '{$_Name}'"
+        )) );
+    }
+}
+
+class MySQL extends SQLDB {
+    public function __construct($_Name,  $_Account = 'root:',  $_Option = null) {
+        $this->name = $_Name;
+
+        $_Name = array_merge(
+            array('host' => 'localhost'),
+            is_string($_Name)  ?  array('dbname' => $_Name)  :  $_Name
+        );
+        $_DSN = array();
+
+        foreach ($_Name  as  $_Key => $_Value)
+            $_DSN[] = "{$_Key}={$_Value}";
+
+        $_Account = explode(':', $_Account);
+
+        $this->dataBase = new PDO(
+            'mysql:' . join(';', $_DSN),  $_Account[0],  $_Account[1],  $_Option
+        );
+    }
+    public function hasTable($_Name) {
+        return  !! count( $this->query(array(
+            'select'  =>  'table_schema, table_name',
+            'from'    =>  'information_schema.tables',
+            'where'   =>
+                "table_schema = '{$this->name}' and table_name = '{$_Name}'"
+        )) );
+    }
+}
+
 // ----------------------------------------
 //
-//    Simple HTTP Server & Client  v1.0
+//    Simple HTTP Server & Client  v0.9
 //
 // ----------------------------------------
 
