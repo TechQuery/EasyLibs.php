@@ -59,6 +59,7 @@ $_XDomain_Proxy->onError(function () {
 
 ## 【版本简史】
 
+ - v2.4 Stable —— 2016年10月12日  所有 class 迁移至 **独立的类文件**，并启用 **SPL AutoLoad** 机制
  - v2.3 Stable —— 2016年4月21日   独立出 **HTTP_Request 实现类**、 **SQLDB 抽象类**，并新增 **MySQL 实现类**
  - v2.2 Stable —— 2016年3月3日    新增 **HTMLConverter 抽象类**（HTML 转换器），且自带一个 MarkDown 规则实现类
  - v1.9 Stable —— 2015年11月15日  SQL_Table 增加 rename、addColumn 实例方法；HTTPServer 多处优化
