@@ -5,19 +5,20 @@
 
 ## 【主要模块（类）】
 
- 1. 文件系统  v0.4
- 2. SQL 数据库类族 v0.7
- 3. HTTP 服务器
+ 1. **对象属性访问**控制器（抽象类） v0.1
+ 2. 文件系统  v0.4
+ 3. SQL 数据库类族 v0.7
+ 4. HTTP 服务器
    - 通用响应 —— setStatus、setHeader、setCookie、send
    - 专用响应 —— redirect、auth、download
    - REST 路由 —— 基于 `$_SERVER['PATH_INFO']`（NginX 配置方法 参考如下）
      - http://www.cnblogs.com/adu0409/articles/3359160.html
      - http://my.oschina.net/longxuu/blog/190223
- 4. HTTP 客户端
+ 5. HTTP 客户端
    - REST 请求
    - HTTP 标准缓存 (ToDo)
- 5. DOM 操作库（jQuery 兼容 API）—— 直接引用 **phpQuery**
- 6. HTML 转换器  v0.3
+ 6. DOM 操作库（jQuery 兼容 API）—— 直接引用 **phpQuery**
+ 7. HTML 转换器  v0.3
    - 核心抽象类 —— HTMLConverter
    - 自带一个 MarkDown 规则实现类
 
