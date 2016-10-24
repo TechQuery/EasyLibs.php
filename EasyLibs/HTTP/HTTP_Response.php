@@ -55,6 +55,7 @@ class HTTP_Response {
         '505'  =>  'HTTP Version Not Supported',
         '511'  =>  'Network Authentication Required'
     );
+
     private static function getFriendlyHeaders($_Header_Array) {
         $_Header = array();
 
@@ -77,7 +78,7 @@ class HTTP_Response {
     private $data;
     private $dataJSON;
 
-    public function __construct($_Header, $_Data) {
+    public function __construct($_Header = null,  $_Data = '{}') {
         $this->header = isset($_Header[0]) ? self::getFriendlyHeaders($_Header) : $_Header;
 
         if (is_string( $_Data )) {
@@ -88,9 +89,11 @@ class HTTP_Response {
             $this->dataJSON = $_Data;
         }
     }
+
     public function __get($_Key) {
         return $this->{$_Key};
     }
+
     public function __set($_Key, $_Value) {
         switch ($_Key) {
             case 'data':        {

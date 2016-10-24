@@ -3,7 +3,7 @@
 //                >>>  EasyLibs.php  <<<
 //
 //
-//      [Version]    v2.5  (2016-10-13)  Stable
+//      [Version]    v2.5  (2016-10-24)  Stable
 //
 //      [Require]    PHP v5.3+
 //
@@ -25,18 +25,18 @@
 abstract class EasyAccess {
     protected $data = array();
 
-    private function getName($_Key,  $_Mode = 0) {
+    private static function getName($_Key,  $_Mode = 0) {
         return  ($_Mode ? 'set' : 'get') .
             strtoupper( $_Key[0] ) . substr($_Key, 1);
     }
 
     public function __get($_Key) {
         return  isset( $this->data[$_Key] )  ?  $this->data[$_Key]  :  (
-            $this->data[$_Key] = $this->{ $this->getName($_Key) }()
+            $this->data[$_Key] = $this->{ self::getName($_Key) }()
         );
     }
     public function __set($_Key, $_Value) {
-        $_Name = $this->getName($_Key, 1);
+        $_Name = self::getName($_Key, 1);
 
         if (method_exists($this, $_Name))
             $this->$_Name( $this->data[$_Key] = $_Value );
@@ -62,6 +62,8 @@ spl_autoload_register(function ($_ClassName) {
         }
     );
 
-    require_once("EasyLibs/$_Path/$_ClassName.php");
+    require_once(join(DIRECTORY_SEPARATOR, array(
+        __DIR__, 'EasyLibs', $_Path, "$_ClassName.php"
+    )));
 
 },  true,  true);

@@ -7,7 +7,9 @@
 // ------------------------------
 
 
-require_once('phpQuery.php');
+require_once(join(DIRECTORY_SEPARATOR, array(
+    __DIR__, '..', '..', 'phpQuery.php'
+)));
 
 
 abstract class HTMLConverter {

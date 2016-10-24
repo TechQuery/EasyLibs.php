@@ -36,6 +36,10 @@ abstract class SQLDB {
     protected $table = array();
     public    $name;
 
+    public function __construct($_Name) {
+        $this->name = $_Name;
+    }
+
     public function query(
         $_SQL_Array,  $_Fetch_Type = PDO::FETCH_OBJ,  $_Fetch_Args = null
     ) {
