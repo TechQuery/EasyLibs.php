@@ -69,16 +69,17 @@ abstract class SQLDB {
     }
 
     public function __get($_Name) {
-        if ($_Name == 'error')
-            return array(
-                'code'  =>  $this->dataBase->errorCode(),
-                'info'  =>  $this->dataBase->errorInfo(),
-            );
         if (isset( $this->table[$_Name] ))
             return $this->table[$_Name];
 
         if ($this->hasTable( $_Name ))
             return $this->addTable($_Name);
+    }
+
+    public function __call($_Name, $_Argument) {
+        return call_user_func_array(
+            array($this->dataBase, $_Name),  $_Argument
+        );
     }
 
     public function createTable($_Name, $_Column_Define) {

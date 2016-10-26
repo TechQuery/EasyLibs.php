@@ -8,12 +8,15 @@
 
 
 class MySQL extends SQLDB {
-    public function __construct($_Name,  $_Account = 'root:',  $_Option = null) {
+    public function __construct(
+        $_Name,  $_Account = 'root:',  $_CharSet = 'utf8',  $_Option = null
+    ) {
         parent::__construct( $_Name );
 
         $_Name = array_merge(
             array('host' => 'localhost'),
-            is_string($_Name)  ?  array('dbname' => $_Name)  :  $_Name
+            is_string($_Name)  ?  array('dbname' => $_Name)  :  $_Name,
+            array('charset' => $_CharSet)
         );
         $_DSN = array();
 

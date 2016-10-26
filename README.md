@@ -1,6 +1,7 @@
 # EasyLibs.php
 
-致力于做一个轻量、易用、优雅的 PHP 类库 —— 旨在不依赖任何 PHP 扩展，即可快速构建 Web 应用后端服务，支持 批量、回调、连缀风格，兼容 PHP v5.3+。
+致力于做一个轻量、易用、优雅的 PHP 类库 —— 旨在不依赖任何 PHP 扩展，即可快速构建 Web 应用后端服务，支持 批量、回调、连缀风格，兼容 PHP v5.3.6+。
+
 
 
 ## 【主要模块（类）】
@@ -21,6 +22,7 @@
  7. HTML 转换器  v0.3
    - 核心抽象类 —— HTMLConverter
    - 自带一个 MarkDown 规则实现类
+
 
 
 ## 【应用实例】
@@ -58,8 +60,15 @@ $_XDomain_Proxy->onError(function () {
 })->send();
 ```
 
+### （二）微信 Web 开发
+
+https://github.com/TechQuery/WeChat_Web_Demo/
+
+
+
 ## 【版本简史】
 
+ - v2.5 Stable —— 2016年10月26日  新增 **EasyAccess 抽象类**（对象访问控制器）
  - v2.4 Stable —— 2016年10月12日  所有 class 迁移至 **独立的类文件**，并启用 **SPL AutoLoad** 机制
  - v2.3 Stable —— 2016年4月21日   独立出 **HTTP_Request 实现类**、 **SQLDB 抽象类**，并新增 **MySQL 实现类**
  - v2.2 Stable —— 2016年3月3日    新增 **HTMLConverter 抽象类**（HTML 转换器），且自带一个 MarkDown 规则实现类
