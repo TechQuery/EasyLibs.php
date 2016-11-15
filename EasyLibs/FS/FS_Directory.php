@@ -26,31 +26,33 @@ class FS_Directory extends SplFileInfo {
         $this->URI = $this->getRealPath();
     }
 
-    public function traverse() {
-        $_Args = func_get_args();
-
-        if (! ($_Args[0] instanceof Closure)) {
-            $_Mode = $_Args[0];
-            $_Callback = $_Args[1];
-        } else
-            $_Callback = $_Args[0];
+    public function traverse($_Callback = '',  $_Mode = 0) {
+        $_FileList = array();
 
         foreach (
             new RecursiveIteratorIterator(
                 new RecursiveDirectoryIterator($this->URI, FilesystemIterator::SKIP_DOTS),
-                isset($_Mode) ? $_Mode : 0
+                $_Mode
             ) as
             $_Name => $_File
-        ) {
-            $_File->setFileClass('FS_File');
+        )
+            if (is_callable( $_Callback )) {
+                $_File->setFileClass('FS_File');
 
-            if (false === call_user_func(
-                $_Callback,  $_Name,  $_File->openFile('a+')
-            ))
-                break;
-        }
-        return $this;
+                if (false === call_user_func(
+                    $_Callback,  $_Name,  $_File->openFile('a+')
+                ))
+                    break;
+            } else
+                $_FileList[] = str_replace(
+                    array($this->URI, "\\"),
+                    array('', '/'),
+                    $_Name
+                );
+
+        return  $_FileList ? $_FileList : $this;
     }
+
     public function delete() {
         $_URI = $this->traverse(2,  function ($_Name, $_File) {
             $_URI = $_File->URI;

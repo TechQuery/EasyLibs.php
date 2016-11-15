@@ -22,6 +22,7 @@
  7. HTML 转换器  v0.3
    - 核心抽象类 —— HTMLConverter
    - 自带一个 MarkDown 规则实现类
+ 8. 数据模型 抽象类  v0.3
 
 
 
@@ -65,9 +66,15 @@ $_XDomain_Proxy->onError(function () {
 https://github.com/TechQuery/WeChat_Web_Demo/
 
 
+### （三）PHP 文档工具
+
+https://github.com/TechQuery/EasyDocs.php/
+
+
 
 ## 【版本简史】
 
+ - v2.8 Stable —— 2016年11月15日  新增 **DataModel 抽象类**，方便实现 **业务数据读写**逻辑
  - v2.5 Stable —— 2016年10月26日  新增 **EasyAccess 抽象类**（对象访问控制器）
  - v2.4 Stable —— 2016年10月12日  所有 class 迁移至 **独立的类文件**，并启用 **SPL AutoLoad** 机制
  - v2.3 Stable —— 2016年4月21日   独立出 **HTTP_Request 实现类**、 **SQLDB 抽象类**，并新增 **MySQL 实现类**

@@ -75,18 +75,18 @@ class HTTP_Response {
     }
 
     public  $header;
+    private $rawString;
     private $data;
-    private $dataJSON;
 
     public function __construct($_Header = null,  $_Data = '{}') {
         $this->header = isset($_Header[0]) ? self::getFriendlyHeaders($_Header) : $_Header;
 
         if (is_string( $_Data )) {
-            $this->data = $_Data;
-            $this->dataJSON = json_decode($_Data, true);
+            $this->rawString = $_Data;
+            $this->data = json_decode($_Data, true);
         } else {
-            $this->data = json_encode($_Data);
-            $this->dataJSON = $_Data;
+            $this->rawString = json_encode($_Data);
+            $this->data = $_Data;
         }
     }
 
@@ -96,14 +96,14 @@ class HTTP_Response {
 
     public function __set($_Key, $_Value) {
         switch ($_Key) {
-            case 'data':        {
-                $this->data = $_Value;
-                $this->dataJSON = json_decode($_Value, true);
+            case 'rawString':        {
+                $this->rawString = $_Value;
+                $this->data = json_decode($_Value, true);
                 break;
             }
-            case 'dataJSON':    {
-                $this->data = json_encode($_Value);
-                $this->dataJSON = $_Value;
+            case 'data':    {
+                $this->rawString = json_encode($_Value);
+                $this->data = $_Value;
             }
         }
     }
